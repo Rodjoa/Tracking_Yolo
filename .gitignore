@@ -1,0 +1,25 @@
+# Entorno virtual
+.venv/
+
+# Caché de Python
+__pycache__/
+*.py[cod]
+
+# Modelos YOLO
+*.pt
+
+# Videos de entrada
+Inputs/
+
+# Videos generados
+*.avi
+*.mp4
+
+# Archivos de respaldo
+Respaldo_*.py
+
+# VS Code
+.vscode/
+
+# Windows
+Thumbs.db

@@ -1,0 +1,16 @@
+Martes 30 Junio:
+- Investigación de modelos de procesamiento de imagen útiles
+- Elección de YOLO 11
+- Instalación del entorno de programación
+
+Miércoles 1 de Julio:
+- Descarga del modelo Yolo 11 y se trabaja con fotografías
+- Revisión de documentación necesaria para script
+- Se programa Script de detección de objetos clasificando personas
+- Se define Región de interés en la fotografía
+- Se clasifican personas de las fotografías según el centro de su caja
+  de detección esté dentro o fuera del polígono definido por la zona 
+  de interés
+
+Jueves 2 de Julio:
+- Revisión de documentación
