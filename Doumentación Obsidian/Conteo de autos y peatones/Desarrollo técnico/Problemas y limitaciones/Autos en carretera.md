@@ -1,0 +1,2 @@
+
+Pese a tener buena detección, cuando los autos (objetos) van muy rapido, en caso de no tener un alto FPS el video, sucede que se mueve demasiados pixeles de un frame al siguiente, por lo que se estropea la "continuidad del objeto" y deja de reconocerlo o lo reconoce como uno distinto.

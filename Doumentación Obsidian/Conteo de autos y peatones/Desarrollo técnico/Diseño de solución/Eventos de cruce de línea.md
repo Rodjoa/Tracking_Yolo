@@ -70,7 +70,8 @@ is_projection_inside_segment()
 
 Parámetro:
 
-ttt
+t
+
 
 Interpretación:
 
@@ -82,9 +83,7 @@ Interpretación:
 |>1|fuera|
 |<0|fuera|
 
-Solo se acepta:
-
-0≤t≤1 
+Solo se acepta: 0≤t≤1 
 
 
 

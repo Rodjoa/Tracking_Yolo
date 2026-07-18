@@ -1,0 +1,2 @@
+
+Los periodos de análisis se generan mediante ventanas temporales fijas de 15 minutos. En caso de que el video finalice antes de completar un periodo, dicho intervalo se descarta para evitar comparar muestras de distinta duración.
