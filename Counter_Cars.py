@@ -7,12 +7,14 @@ from ultralytics import YOLO
 from ultralytics.utils.plotting import colors
 import random
 from collections import defaultdict
+import pytesseract
 
+pytesseract.pytesseract.tesseract_cmd = r'C:\\Program Files\\Tesseract-OCR\\tesseract.exe'
 
 class ObjectTracking:
     """Object Tracking using Ultralytics YOLO26: https://docs.ultralytics.com/models/yolo26/"""
 
-    def __init__(self, model="yolo11s.pt", source= "Inputs/Av_Principal/Angulo_A.mp4"
+    def __init__(self, model="yolo11s.pt", source= "Inputs/videoluis_cortado.mp4"
     ".mp4"): #yolo11s.pt, yolo11n.pt...Hay diferentes modelos. Hay que ir testeando
 
         self.model = YOLO(model)  # Model initialization
@@ -53,6 +55,16 @@ class ObjectTracking:
         #Contador para cada movimiento
         self.counter_movement = {}      # Ej: {"movimiento_1": 3, "movimiento_2": 1, "movimiento_3": 1}
 
+        #Detección de Fecha y Hora (OCR)
+        #self.ROI_DateTime = im0[0:100, 0:600]   #Región de pixeles que recortaremos para obtener la hora con Tesseract
+        self.prev_texto = ''     #Variable util para comparar si el texto cambia respecto al frame anterior (detectar si cambia fecha u hora)
+        self.prev_texto = ""
+        self.current_date = None
+        self.current_time = None
+        self.prev_date = None
+        self.prev_time = None
+
+        
         #==== Variables del Callback Mouse ==== 
         self.prevX = -1
         self.prevY = -1
@@ -156,17 +168,22 @@ class ObjectTracking:
     
 
         while self.cap.isOpened():  #CADA VUELTA AL WHILE ES UN FRAME NUEVO
-            success, im0 = self.cap.read() #Obtiene el siguiente Frame
-
-            
+            success, im0 = self.cap.read() # im0: Frame actual
             # print("Frame OpenCV:", int(self.cap.get(cv2.CAP_PROP_POS_FRAMES)))
-
             #self.counter_frames+=1
             #print("frame: ", self.counter_frames)
-
             if not success:
                 #print("End of video or failed to read image.")
                 break
+
+            #Bloque ciclico de Tesseract Date & Time
+            #!!!!! im0 ES LA IMAGEN ORIGINAL QUE DEBEMOS CORTAR 
+            rows, cols, _ = im0.shape       #Capturamos la dimensión para testear donde cortar la fecha y hora
+            #print("Rows: ", rows)     #Debug necesario al configurar ROI en cada video
+            #print("Cols: ", cols)
+
+            #==== Acá llamamos a la función q recibe im0 y entrega Fecha y Hora
+            self.current_time,self.current_date = self.get_date_and_time(im0)
 
             results = self.model.track(im0, persist=True, verbose=False)  # Object tracking
 
@@ -264,34 +281,37 @@ class ObjectTracking:
                                                     movement =  self.movement_table[movement_key] #Se le asigna el valor, ej: "Girar_derecha", no la llave
                                                     if(movement not in self.counter_movement):
                                                         self.counter_movement[movement] = 1  # Ej: {"movimiento_1": 3, "movimiento_2": 1, "movimiento_3": 1}
-                                                        print("objeto", id, "realizó el movimiento de",self.movement_table[movement_key])
+                                                        print("objeto", id, " realizó movimiento",self.movement_table[movement_key]," a la hora: ", self.current_time, "en fecha: ", self.current_date)
                                                 
                                                         
                                                     else:
-                                                        print("objeto", id, "realizó el movimiento de",self.movement_table[movement_key])
+                                                        print("objeto", id, " realizó movimiento",self.movement_table[movement_key]," a la hora: ", self.current_time, "en fecha: ", self.current_date)
                                                         self.counter_movement[movement]+=1
 
                                                     #======= Generar dato en formato Excel =======
                                                     #OBS: El contador deberá resetearse en cada intervalo de tiempo elegido
                                                     #Crear fecha y hora 
+                                                    #
                                                 registro = {
                                                     "PC": self.pc,
                                                     "UBICACION": self.ubicacion,
                                                     "COMUNA": self.comuna,
                                                     "DIA": self.dia,
-                                                    "FECHA": self.fecha,
-                                                    "HORA": self.hora,
+                                                    "FECHA": self.current_date,
+                                                    "HORA": self.current_time,
                                                     "HH": self.hh,
                                                     "HHMM": self.hhmm,
-                                                    "MOV 1": self.counter_movement.get("MOV 1", 0),
-                                                    "MOV 2": self.counter_movement.get("MOV 2", 0),
-                                                    "MOV 3": self.counter_movement.get("MOV 3", 0),
-                                                    "MOV 4": self.counter_movement.get("MOV 4", 0),
+                                                    "ID": id,
+                                                    "MOVIMIENTO": movement
+                                                    #"MOV 1": self.counter_movement.get("MOV 1", 0),
+                                                    #"MOV 2": self.counter_movement.get("MOV 2", 0),
+                                                    #"MOV 3": self.counter_movement.get("MOV 3", 0),
+                                                    #"MOV 4": self.counter_movement.get("MOV 4", 0),
                                                     #uSO GET PQ AL PRINCIPIO DEL VIDEO PUEDE Q AUN NO OCURRA NINGUN MOV n, 
                                                     # SI HACEMOSself.counter_movement["MOV 3"] PUEDE HABER ERROR
                                                     #En cambio con get, Si existe la llave 'MOV 3', devuelve su valor; si no existe, devuelve 0."
 
-                                                    "FLUJO": sum(self.counter_movement.values())
+                                                    #"FLUJO": sum(self.counter_movement.values())
                                                 }
                                                               #Los contadores estan acumulativos, despues hay que resetearlos
                                                               #En cada intervalo de tiempo
@@ -306,7 +326,7 @@ class ObjectTracking:
                                                     self.archivo,
                                                     index=False
                                                 )
-                                                self.registros.clear()
+                                                #self.registros.clear()
 
 
                                                         
@@ -554,8 +574,32 @@ class ObjectTracking:
                 self.lines.append((self.P_start, self.P_end))    #Llenamos la lista de lineas que despues dibujaremos
             cv2.imshow("Configurar lineas", self.img)
  
-    
     #============== FIN BLOQUE CALLBACK DE MOUSE ===============
+
+    #================ Obtener Fecha y hora (OCR) =================
+    def get_date_and_time(self, frame):
+
+        ROI_DateTime = frame[0:100, 0:600]
+
+        texto = pytesseract.image_to_string(ROI_DateTime).strip()
+
+        if texto and texto != self.prev_texto:
+
+            try:
+                dt = datetime.strptime(texto, '%Y-%m-%d %H:%M:%S')
+
+                self.current_date = dt.date()
+                self.current_time = dt.time()
+
+                self.prev_texto = texto
+
+            except ValueError:
+                pass
+
+        return  self.current_time, self.current_date
+
+#Uso de bloque try en get_date_and_time(self, frame) 
+#Intenta convertirlo. Si no puede porque el formato está malo, no mata el programa; simplemente sigue." -> Fuente de datos puede fallar
 
 
   #==== Función que devolverá dos puntos a cada lado de una recta,
@@ -715,6 +759,6 @@ if __name__ == "__main__":
     # Initialize and run tracker
     tracker = ObjectTracking(
         model="yolo11s.pt",
-        source="Inputs/Av_Principal/Angulo_A.mp4"
+        source="Inputs/videoluis_cortado.mp4"
     )
     tracker.run()
