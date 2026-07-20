@@ -1,3 +1,4 @@
+#"Versión V1 funcional: detección, tracking, movimientos, fecha/hora y exportación Excel."
 import cv2
 import numpy as np
 import pandas as pd
@@ -19,7 +20,7 @@ pytesseract.pytesseract.tesseract_cmd = r'C:\\Program Files\\Tesseract-OCR\\tess
 class ObjectTracking:
     """Object Tracking using Ultralytics YOLO26: https://docs.ultralytics.com/models/yolo26/"""
 
-    def __init__(self, model="yolo11s.pt", source= "Inputs/videoluis_cortado.mp4"
+    def __init__(self, model="yolo11s.pt", source=  r"C:\ProyectosTEL\Respaldo_Conteo_Personas_PDI\Inputs\videoluis_cortado.mp4"
     ".mp4"): #yolo11s.pt, yolo11n.pt...Hay diferentes modelos. Hay que ir testeando
 
         self.model = YOLO(model)  # Model initialization
@@ -802,6 +803,6 @@ if __name__ == "__main__":
     # Initialize and run tracker
     tracker = ObjectTracking(
         model="yolo11s.pt",
-        source="Inputs/videoluis_cortado.mp4"
+        source=r"C:\ProyectosTEL\Respaldo_Conteo_Personas_PDI\Inputs\videoluis_cortado.mp4"
     )
     tracker.run()

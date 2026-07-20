@@ -174,21 +174,15 @@ class ObjectTracking:
         # --- Medición de tiempo entre frames ---
         last_loop_time = time.perf_counter()
 
-        while self.cap.isOpened():  #CADA VUELTA AL WHILE ES UN FRAME NUEVO
+        while self.cap.isOpened():
 
-            ## --- Medición de tiempo entre frames ---
             current_time = time.perf_counter()
             delta_ms = (current_time - last_loop_time) * 1000
             last_loop_time = current_time
-            print("")
 
+            success, im0 = self.cap.read()
 
-            success, im0 = self.cap.read() # im0: Frame actual
-            # print("Frame OpenCV:", int(self.cap.get(cv2.CAP_PROP_POS_FRAMES)))
-            #self.counter_frames+=1
-            #print("frame: ", self.counter_frames)
             if not success:
-                #print("End of video or failed to read image.")
                 break
 
             fps_real = 1000 / delta_ms if delta_ms > 0 else 0
@@ -196,243 +190,46 @@ class ObjectTracking:
 
             self.counter_frames += 1
 
-            # Mostrar memoria RAM cada 100 frames (Para ver si aumenta criticamente)
-            if self.counter_frames % 1 == 0:
-                memoria = process.memory_info().rss / 1024**2
-                print(f"Frame: {self.counter_frames} | RAM: {memoria:.2f} MB")
+            # ===== OCR DESACTIVADO =====
+            # self.current_time, self.current_date = self.get_date_and_time(im0)
 
-            #Bloque ciclico de Tesseract Date & Time
-            #!!!!! im0 ES LA IMAGEN ORIGINAL QUE DEBEMOS CORTAR 
-            rows, cols, _ = im0.shape       #Capturamos la dimensión para testear donde cortar la fecha y hora
-            #print("Rows: ", rows)     #Debug necesario al configurar ROI en cada video
-            #print("Cols: ", cols)
+            # ===== YOLO PURO =====
+            t0 = time.time()
 
-            
-            #==== Acá llamamos a la función q recibe im0 y entrega Fecha y Hora
-            t2 = time.time()
-            self.current_time,self.current_date = self.get_date_and_time(im0)
-            t3 = time.time()
-            print(f"OCR: {(t3-t2)*1000:.1f} ms")
-
-
-
-            t0 = time.time() #Vemos cuello de botella en tiempo de ejecucion
-
-
-            # Reducimos resolución solo para probar rendimiento
-            #im0 = cv2.resize(im0, (1280,720)) #Le bajamos la resolucion para probar si el cuello de botella es la ALTA RESOLUCIÓN
-
-
-            #===== Acá probamos distintos modelos de trackers, cargándolos en la variable "results"
-            #results = self.model.track(im0, persist=True, tracker="bytetrack.yaml", verbose=False)
-            results = self.model.track(im0, persist=True, verbose=False)  # Object tracking
+            # ===== YOLO PURO =====
+            results = self.model(im0, verbose=False)
 
             t1 = time.time()
-            print(f"YOLO+TRACK: {(t1-t0)*1000:.1f} ms")
+            print(f"YOLO SOLO: {(t1-t0)*1000:.1f} ms")
 
             if results and len(results) > 0:
+
                 result = results[0]
 
-                if result.boxes is not None and result.boxes.id is not None:
+                if result.boxes is not None:
+
+                    t4 = time.time()
+
                     boxes = result.boxes.xyxy.cpu()
-                    ids = result.boxes.id.cpu()
-                    clss = result.boxes.cls.tolist()
+                    clss = result.boxes.cls.cpu()
 
-                    if boxes is not None or ids is not None:
-                        for box, id, cls in zip(boxes, ids.tolist(), clss):
-                            self.draw_bbox(im0, box, id, cls)
+                    t5 = time.time()
+                    print(f"CPU TRANSFER: {(t5-t4)*1000:.1f} ms")
 
-                            x1, y1, x2, y2 = box
-                            track = self.track_history[id]
+                    for box, cls in zip(boxes, clss.tolist()):
 
-                            clase = self.names[int(cls)]
+                        # Solo para visualizar si quieres
+                        x1, y1, x2, y2 = box
 
-                            # append box centroid
-                            track.append(
-                                (float((x1+x2)/2), 
-                                float((y1+y2)/2))
-                                )  
-                            
-                            #Ahora debemos hacer un bucle para cada linea
-
-                            for numero_linea, line in enumerate(self.lines):
-
-                                if id not in self.line_side:
-                                    self.line_side[id] = {} #Agregamos la llave id del objeto como llave
-                                                    #El valor será un diccionario {linea_n: lado 0 o 1}
-                                                    #Ej: {line[i]: self.calculate_line_side(track[-1], R1_start, R1_end) }
-
-                            #******** Inicio de  Bloque cambiado de indentacion para implementar para cada linea ********** 
-                            
-                                #Escribimos la linea manualmente que evaluaremos (despues al agregar más lineas implementaremos un bucle "para toda linea")
-                                R1_start = line[0] # Punto (x0,y0) inicial de la recta R1
-                                R1_end = line[1]   # Punto (xn,yn) final de la recta R1
-
-                              #self.line_side[id][numero_linea] = lado
-                                if(len(track) == 1):
-                                    new_side_value = self.calculate_line_side(track[-1], R1_start, R1_end)
-                                    if(new_side_value != None):
-                                        self.line_side[id][numero_linea] = new_side_value #Debemos calcular este valor con los condicionales de abajo (despues sera por region geometrica)
-
-                                        
-
-                                elif (len(track) > 1):
-                                    prev_side_value = self.line_side[id][numero_linea]
-                                    new_side_value = self.calculate_line_side(track[-1], R1_start, R1_end) #Calculamos el nuevo lado del objeto id respecto a la linea n
-                                    #Validamos si el cruce es relevante (aumentar contador) o es irrelevante
-                                    validate_crossing = self.is_projection_inside_segment(track[-1], R1_start, R1_end)
-
-                                    #A continuación debemos condicionar el count++ segun sea valido el cruce, pero la logica de cambio de lado no se debe cambiar
-                                    #Cuando el objeto está justo en la línea no contamos el cambio de estado, y no es cruce.
-                                    if(new_side_value != None):
-                                        self.line_side[id][numero_linea] = new_side_value
-
-                                        if(self.line_side[id][numero_linea] != prev_side_value and validate_crossing):
-                                            #Apenas ocurre el evento de cruce lo registramos
-                                            current_event = {
-                                                "line": numero_linea,
-                                                "from": prev_side_value,
-                                                "to": new_side_value
-                                            }
-
-                                            #print("Current event:", current_event)
-
-                                            if id not in self.last_event_by_id:
-                                                self.last_event_by_id[id] = current_event
-
-                                            else:
-                                                previous_event = self.last_event_by_id[id]
-
-                                                #print("previous_event: ", previous_event)
-                                                #print("Current :", current_event)
-
-                                                # Comparar previous_event con current_event
-                                                # Determinar movimiento ACA DEBEMOS USAR TABLA DE MOVIMIENTOS
-                                                # SE CONSTRUYE LA TABLA PARA CADA VIDEO
-                                                movement_key = (   #Movement_key es una tupla, podría ser: (1,0,1,2,0,1) y toma los valores de 
-                                                                   #las llaves de self.movement_table
-                                                    previous_event["line"],
-                                                    previous_event["from"],
-                                                    previous_event["to"],
-
-                                                    current_event["line"],
-                                                    current_event["from"],
-                                                    current_event["to"]
-                                                )
-
-                                                if(movement_key in self.movement_table):
-                                                    movement =  self.movement_table[movement_key] #Se le asigna el valor, ej: "Girar_derecha", no la llave
-                                                    if(movement not in self.counter_movement):
-                                                        self.counter_movement[movement] = 1  # Ej: {"movimiento_1": 3, "movimiento_2": 1, "movimiento_3": 1}
-                                                        print("objeto", id, " realizó movimiento",self.movement_table[movement_key]," a la hora: ", self.current_time, "en fecha: ", self.current_date)
-                                                
-                                                        
-                                                    else:
-                                                        print("objeto", id, " realizó movimiento",self.movement_table[movement_key]," a la hora: ", self.current_time, "en fecha: ", self.current_date)
-                                                        self.counter_movement[movement]+=1
-
-                                                    #======= Generar dato en formato Excel =======
-                                                    #OBS: El contador deberá resetearse en cada intervalo de tiempo elegido
-                                                    #Crear fecha y hora 
-                                                    #
-                                                registro = {
-                                                    "PC": self.pc,
-                                                    "UBICACION": self.ubicacion,
-                                                    "COMUNA": self.comuna,
-                                                    "DIA": self.dia,
-                                                    "FECHA": self.current_date,
-                                                    "HORA": self.current_time,
-                                                    "HH": self.hh,
-                                                    "HHMM": self.hhmm,
-                                                    "ID": id,
-                                                    "MOVIMIENTO": movement
-                                                    #"MOV 1": self.counter_movement.get("MOV 1", 0),
-                                                    #"MOV 2": self.counter_movement.get("MOV 2", 0),
-                                                    #"MOV 3": self.counter_movement.get("MOV 3", 0),
-                                                    #"MOV 4": self.counter_movement.get("MOV 4", 0),
-                                                    #uSO GET PQ AL PRINCIPIO DEL VIDEO PUEDE Q AUN NO OCURRA NINGUN MOV n, 
-                                                    # SI HACEMOSself.counter_movement["MOV 3"] PUEDE HABER ERROR
-                                                    #En cambio con get, Si existe la llave 'MOV 3', devuelve su valor; si no existe, devuelve 0."
-
-                                                    #"FLUJO": sum(self.counter_movement.values())
-                                                }
-                                                              #Los contadores estan acumulativos, despues hay que resetearlos
-                                                              #En cada intervalo de tiempo
-
-                                                #========== Exportación a EXCEL ==========
-                                                self.registros.append(registro)
-
-    
-                                                df = pd.DataFrame(self.registros)
-
-                                                df.to_excel(
-                                                    self.archivo,
-                                                    index=False
-                                                )
-                                                #self.registros.clear()
-
-
-                                                        
-
-
-                                                self.last_event_by_id[id] = current_event
-
-
-                                            #====== Bloque para distinguir por clases ======   Aún no lo usamos de manera importante
-                                            if clase not in self.counter_crossing_class:
-                                                self.counter_crossing_class[clase] = 0
-                                            self.counter_crossing+=1                    #Contador total de cruces
-                                            self.counter_crossing_class[clase]+=1       #Contador de cruces por clases
-
-                                            #Detectamos sentido del cruce de linea:
-                                            #Detectar movimientos con condicional CLASE del objeto
-                                            #===== FIN BLOQUE DISTINCION DE CLASES ====== Despues lo terminamos y movemos si es necesario
-
-                                            
-
-                                            
-                                            #print ("las lineas son: ", self.lines)
-
-
-
-
-                                            #print("objeto", id, "de clase", self.names[int(cls)], "cambio de posicion respecto a la linea", line)
-                                            #print("contador por clase", self.counter_crossing_class)
-                                            #print("Punto anterior: ", track[-2])
-                                            #print("Punto actual: ", track[-1])
-                                            #print("Número total de cruces:", self.counter_crossing)
-                                    #print("Variable dic", self.line_side)
-
-                            #******** Fin de Bloque cambiado de indentacion para implementar para cada linea ********** 
-
-
-                            if len(track) > 50:  # Impide saturar el buffer borrando las ubicaciones más antiguas
-                                track.pop(0)
-    
-                            # draw the tracking lines
-                            points = np.hstack(track).astype(np.int32).reshape((-1, 1, 2))
-
-                            #Aca estaban los cv2.circle y polylines que moví a la función draw_lines()
-                            cv2.circle(
-                                im0,
-                                (int(track[-1][0]), int(track[-1][1])),
-                                5,
-                                colors(cls, True),
-                                -1
-                            )
-
-                            cv2.polylines(
-                                im0, 
-                                [points], 
-                                isClosed=False, 
-                                color=colors(cls, True), 
-                                thickness=self.polyline_thickness
-                                )
-                            
-                            self.draw_lines(im0)          
+                        cv2.rectangle(
+                            im0,
+                            (int(x1), int(y1)),
+                            (int(x2), int(y2)),
+                            (0, 255, 0),
+                            2
+                        )
 
             self.writer.write(im0)
-            cv2.imshow(self.window_name, im0)  # Display and handle input   NO LA MOSTRAMOS PARA LA PRUEBA
 
             key = cv2.waitKey(1) & 0xFF
             if key == 13:

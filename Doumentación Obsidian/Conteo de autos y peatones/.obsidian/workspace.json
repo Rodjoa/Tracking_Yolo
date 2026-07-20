@@ -11,10 +11,14 @@
             "id": "e8ac2fd4c45ba900",
             "type": "leaf",
             "state": {
-              "type": "empty",
-              "state": {},
+              "type": "markdown",
+              "state": {
+                "file": "Lineas de trabajo actual.md",
+                "mode": "source",
+                "source": false
+              },
               "icon": "lucide-file",
-              "title": "Nueva pestaña"
+              "title": "Lineas de trabajo actual"
             }
           }
         ]
@@ -181,6 +185,13 @@
   },
   "active": "e8ac2fd4c45ba900",
   "lastOpenFiles": [
+    "Estado actual.md",
+    "Lineas de trabajo actual.md",
+    "Bienvenido.md",
+    "Desarrollo técnico/Problemas y limitaciones/Alta Latencia en procesamiento.md",
+    "Pasted image 20260720120358.png",
+    "Pasted image 20260720120334.png",
+    "Pasted image 20260720120309.png",
     "Desarrollo técnico/Exportación de datos/Excel.md",
     "Pasted image 20260718000210.png",
     "Desarrollo técnico/Diseño de solución/Eventos de cruce de línea.md",
@@ -208,12 +219,10 @@
     "Desarrollo técnico/Diseño de solución/Escenarios/Peatones en cruce.md",
     "Desarrollo técnico/Diseño de solución/Escenarios/Autos en cruce.md",
     "Desarrollo técnico/Diseño de solución/Escenarios",
-    "Estado actual.md",
     "Desarrollo técnico/Problemas y limitaciones",
     "Desarrollo técnico/Diseño de solución",
     "Desarrollo técnico/Funciones importantes",
     "Desarrollo técnico",
-    "Funciones_importantes.md",
-    "Bienvenido.md"
+    "Funciones_importantes.md"
   ]
 }

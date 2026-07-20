@@ -174,32 +174,31 @@ class ObjectTracking:
         # --- Medición de tiempo entre frames ---
         last_loop_time = time.perf_counter()
 
-        while self.cap.isOpened():  #CADA VUELTA AL WHILE ES UN FRAME NUEVO
+        while self.cap.isOpened():  # CADA VUELTA AL WHILE ES UN FRAME NUEVO
 
-            ## --- Medición de tiempo entre frames ---
+            # ===== TIEMPO ENTRE ESTE FRAME Y EL ANTERIOR =====
             current_time = time.perf_counter()
             delta_ms = (current_time - last_loop_time) * 1000
             last_loop_time = current_time
-            print("")
 
+            # ===== LEER FRAME =====
+            success, im0 = self.cap.read()  # im0: Frame actual
 
-            success, im0 = self.cap.read() # im0: Frame actual
-            # print("Frame OpenCV:", int(self.cap.get(cv2.CAP_PROP_POS_FRAMES)))
-            #self.counter_frames+=1
-            #print("frame: ", self.counter_frames)
             if not success:
-                #print("End of video or failed to read image.")
                 break
 
+            # ===== FPS REAL DEL PIPELINE COMPLETO =====
             fps_real = 1000 / delta_ms if delta_ms > 0 else 0
+
             print(f"FRAME->{self.counter_frames + 1}: {delta_ms:.1f} ms | FPS REAL: {fps_real:.2f}")
 
+            # ===== CONTADOR DE FRAMES =====
             self.counter_frames += 1
 
-            # Mostrar memoria RAM cada 100 frames (Para ver si aumenta criticamente)
-            if self.counter_frames % 1 == 0:
+            # ===== MEMORIA CADA 100 FRAMES =====
+            if self.counter_frames % 100 == 0:
                 memoria = process.memory_info().rss / 1024**2
-                print(f"Frame: {self.counter_frames} | RAM: {memoria:.2f} MB")
+                print(f"RAM: {memoria:.2f} MB")
 
             #Bloque ciclico de Tesseract Date & Time
             #!!!!! im0 ES LA IMAGEN ORIGINAL QUE DEBEMOS CORTAR 
@@ -217,26 +216,21 @@ class ObjectTracking:
 
 
             t0 = time.time() #Vemos cuello de botella en tiempo de ejecucion
-
-
-            # Reducimos resolución solo para probar rendimiento
-            #im0 = cv2.resize(im0, (1280,720)) #Le bajamos la resolucion para probar si el cuello de botella es la ALTA RESOLUCIÓN
-
-
-            #===== Acá probamos distintos modelos de trackers, cargándolos en la variable "results"
-            #results = self.model.track(im0, persist=True, tracker="bytetrack.yaml", verbose=False)
             results = self.model.track(im0, persist=True, verbose=False)  # Object tracking
-
             t1 = time.time()
             print(f"YOLO+TRACK: {(t1-t0)*1000:.1f} ms")
 
             if results and len(results) > 0:
+                
                 result = results[0]
 
                 if result.boxes is not None and result.boxes.id is not None:
+                    t4 = time.time() #Medimos latencia en transferencia a CPU
                     boxes = result.boxes.xyxy.cpu()
                     ids = result.boxes.id.cpu()
                     clss = result.boxes.cls.tolist()
+                    t5 = time.time()
+                    print(f"CPU TRANSFER: {(t5-t4)*1000:.1f} ms")
 
                     if boxes is not None or ids is not None:
                         for box, id, cls in zip(boxes, ids.tolist(), clss):
@@ -432,7 +426,7 @@ class ObjectTracking:
                             self.draw_lines(im0)          
 
             self.writer.write(im0)
-            cv2.imshow(self.window_name, im0)  # Display and handle input   NO LA MOSTRAMOS PARA LA PRUEBA
+            #cv2.imshow(self.window_name, im0)  # Display and handle input   NO LA MOSTRAMOS PARA LA PRUEBA
 
             key = cv2.waitKey(1) & 0xFF
             if key == 13:

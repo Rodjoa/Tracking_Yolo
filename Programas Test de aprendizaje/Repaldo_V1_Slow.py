@@ -13,6 +13,12 @@ import psutil
 import os
 process = psutil.Process(os.getpid())
 
+#Versión V1
+#Exporta correctamente a excel y aplica OCR. 
+# Hay comentarios debug buscando el cuello de botella que se identifico:
+# Alta prioridad: Latencia de tracking
+# Moderada corregible fácilmente: Latencia de llamar al OCR en cada frame
+
 
 pytesseract.pytesseract.tesseract_cmd = r'C:\\Program Files\\Tesseract-OCR\\tesseract.exe'
 
@@ -171,18 +177,8 @@ class ObjectTracking:
         self.cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
         #print("Después del set:", int(self.cap.get(cv2.CAP_PROP_POS_FRAMES)))
     
-        # --- Medición de tiempo entre frames ---
-        last_loop_time = time.perf_counter()
 
         while self.cap.isOpened():  #CADA VUELTA AL WHILE ES UN FRAME NUEVO
-
-            ## --- Medición de tiempo entre frames ---
-            current_time = time.perf_counter()
-            delta_ms = (current_time - last_loop_time) * 1000
-            last_loop_time = current_time
-            print("")
-
-
             success, im0 = self.cap.read() # im0: Frame actual
             # print("Frame OpenCV:", int(self.cap.get(cv2.CAP_PROP_POS_FRAMES)))
             #self.counter_frames+=1
@@ -191,12 +187,9 @@ class ObjectTracking:
                 #print("End of video or failed to read image.")
                 break
 
-            fps_real = 1000 / delta_ms if delta_ms > 0 else 0
-            print(f"FRAME->{self.counter_frames + 1}: {delta_ms:.1f} ms | FPS REAL: {fps_real:.2f}")
-
-            self.counter_frames += 1
-
-            # Mostrar memoria RAM cada 100 frames (Para ver si aumenta criticamente)
+            #Vemos como aumenta la memoria en la RAM (buscando el cuello)
+            self.counter_frames +=1
+            # Mostrar memoria cada 100 frames
             if self.counter_frames % 1 == 0:
                 memoria = process.memory_info().rss / 1024**2
                 print(f"Frame: {self.counter_frames} | RAM: {memoria:.2f} MB")
