@@ -280,3 +280,5 @@ Debemos atender el problema del tracking
 
 
 ![[Pasted image 20260720120358.png]]
+
+Investigar ¿ Y si no ejecutamos el tracking en todos los frames? ¿ Y si lo hacemos cada 3 frames?

@@ -1,0 +1,16 @@
+
+# Fuentes sobre problemas de bajo FPS al usar YOLO Tracking (asignación de IDs)\n\n## 1. GitHub — Video processing FPS - slow tracking (#2899)\n**Tema:** El tracking reduce los FPS aproximadamente a la mitad en una RTX 3060.\n**Link:** [https://github.com/ultralytics/ultralytics/issues/2899\n\n---\n\n##](https://github.com/ultralytics/ultralytics/issues/2899%5Cn%5Cn---%5Cn%5Cn##) 
+
+2. Foro oficial Ultralytics — Performance issues with YOLO model reading results\n**Tema:** La latencia proviene del tracking; recomiendan usar ByteTrack en lugar de BoT-SORT.\n**Link:** [https://community.ultralytics.com/t/performance-issues-with-yolo-model-reading-results/752\n\n---\n\n##](https://community.ultralytics.com/t/performance-issues-with-yolo-model-reading-results/752%5Cn%5Cn---%5Cn%5Cn##)
+
+3. GitHub — Tracking is extremely slow on CPU (#4037)\n**Tema:** El tracker puede transformarse en el cuello de botella del pipeline.\n**Link:** [https://github.com/ultralytics/ultralytics/issues/4037\n\n---\n\n##](https://github.com/ultralytics/ultralytics/issues/4037%5Cn%5Cn---%5Cn%5Cn##) 
+
+4. GitHub — YOLOv8 track gets slower and slower over time (#10420)\n**Tema:** El tracking se vuelve progresivamente más lento durante la ejecución.\n**Link:** [https://github.com/ultralytics/ultralytics/issues/10420\n\n---\n\n##](https://github.com/ultralytics/ultralytics/issues/10420%5Cn%5Cn---%5Cn%5Cn##) 
+
+5. GitHub — Video Tracking with persist=True Exits After First Frame (#22614)\n**Tema:** Problemas y comportamientos anómalos relacionados con `persist=True`.\n**Link:** [https://github.com/ultralytics/ultralytics/issues/22614\n\n---\n\n#](https://github.com/ultralytics/ultralytics/issues/22614%5Cn%5Cn---%5Cn%5Cn#) Videos útiles\n\n## 
+
+6. YouTube — How to Benchmark Ultralytics YOLO11 Models\n**Tema:** Cómo medir FPS reales y separar inferencia vs. pipeline completo.\n**Link:** [https://www.youtube.com/watch?v=rEQlAaevEFc\n\n---\n\n##](https://www.youtube.com/watch?v=rEQlAaevEFc%5Cn%5Cn---%5Cn%5Cn##) 
+
+7. YouTube — Speed Up YOLO Object Detection by 4x with Python\n**Tema:** Optimización de FPS y detección de cuellos de botella en OpenCV/YOLO.\n**Link:** [https://www.youtube.com/watch?v=yiSOQJ5JKqY\n\n---\n\n#](https://www.youtube.com/watch?v=yiSOQJ5JKqY%5Cn%5Cn---%5Cn%5Cn#) Tutorial técnico\n\n## 
+
+8. Boosting Inference FPS With Tracker Interpolated Detections\n**Tema:** Detectar cada N frames y usar el tracker para interpolar los frames intermedios.\n**Link:** [https://y-t-g.github.io/tutorials/yolo-tracker-interpolate/\n\n---\n\n#](https://y-t-g.github.io/tutorials/yolo-tracker-interpolate/%5Cn%5Cn---%5Cn%5Cn#) Resumen rápido de las fuentes más relevantes para mi caso\n\n- **Más parecido a mi problema:** #2899 (tracking baja los FPS de ~49 a ~23).\n- **Posible solución directa:** Foro Ultralytics (#2) → cambiar `botsort.yaml` por `bytetrack.yaml`.\n- **Problema de degradación con el tiempo:** #10420.\n- **Revisar uso de `persist=True`:** #22614.\n- **Medir correctamente el cuello de botella:** Video #6.

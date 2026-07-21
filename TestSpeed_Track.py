@@ -230,6 +230,8 @@ class ObjectTracking:
                         )
 
             self.writer.write(im0)
+            cv2.imshow(self.window_name, im0)
+            
 
             key = cv2.waitKey(1) & 0xFF
             if key == 13:

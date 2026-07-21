@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Lineas de trabajo actual.md",
+                "file": "Desarrollo técnico/Mejoras identificadas/Tasa de muestreo adaptativa.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Lineas de trabajo actual"
+              "title": "Tasa de muestreo adaptativa"
             }
           }
         ]
@@ -185,10 +185,14 @@
   },
   "active": "e8ac2fd4c45ba900",
   "lastOpenFiles": [
-    "Estado actual.md",
-    "Lineas de trabajo actual.md",
-    "Bienvenido.md",
+    "Desarrollo técnico/Problemas y limitaciones/Solución a problema de latencia.md",
+    "Desarrollo técnico/Mejoras identificadas/Tasa de muestreo adaptativa.md",
+    "Desarrollo técnico/Mejoras identificadas",
     "Desarrollo técnico/Problemas y limitaciones/Alta Latencia en procesamiento.md",
+    "Desarrollo técnico/Problemas y limitaciones/Links utiles Latencia.md",
+    "Lineas de trabajo actual.md",
+    "Estado actual.md",
+    "Bienvenido.md",
     "Pasted image 20260720120358.png",
     "Pasted image 20260720120334.png",
     "Pasted image 20260720120309.png",
@@ -222,7 +226,6 @@
     "Desarrollo técnico/Problemas y limitaciones",
     "Desarrollo técnico/Diseño de solución",
     "Desarrollo técnico/Funciones importantes",
-    "Desarrollo técnico",
     "Funciones_importantes.md"
   ]
 }

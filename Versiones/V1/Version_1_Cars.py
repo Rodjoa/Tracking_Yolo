@@ -1,4 +1,3 @@
-#"Versión V1 funcional: detección, tracking, movimientos, fecha/hora y exportación Excel."
 import cv2
 import numpy as np
 import pandas as pd
@@ -181,7 +180,7 @@ class ObjectTracking:
             current_time = time.perf_counter()
             delta_ms = (current_time - last_loop_time) * 1000
             last_loop_time = current_time
-            print("")
+            #print("")
 
 
             success, im0 = self.cap.read() # im0: Frame actual
@@ -197,10 +196,13 @@ class ObjectTracking:
 
             self.counter_frames += 1
 
+            if self.counter_frames % 2 != 0:
+                continue
+
             # Mostrar memoria RAM cada 100 frames (Para ver si aumenta criticamente)
-            if self.counter_frames % 1 == 0:
-                memoria = process.memory_info().rss / 1024**2
-                print(f"Frame: {self.counter_frames} | RAM: {memoria:.2f} MB")
+            #if self.counter_frames % 1 == 0:
+                #memoria = process.memory_info().rss / 1024**2
+                #print(f"Frame: {self.counter_frames} | RAM: {memoria:.2f} MB")
 
             #Bloque ciclico de Tesseract Date & Time
             #!!!!! im0 ES LA IMAGEN ORIGINAL QUE DEBEMOS CORTAR 
@@ -210,14 +212,14 @@ class ObjectTracking:
 
             
             #==== Acá llamamos a la función q recibe im0 y entrega Fecha y Hora
-            t2 = time.time()
-            self.current_time,self.current_date = self.get_date_and_time(im0)
-            t3 = time.time()
-            print(f"OCR: {(t3-t2)*1000:.1f} ms")
+            #t2 = time.time()
+            #self.current_time,self.current_date = self.get_date_and_time(im0)
+            #t3 = time.time()
+            #print(f"OCR: {(t3-t2)*1000:.1f} ms")
 
 
 
-            t0 = time.time() #Vemos cuello de botella en tiempo de ejecucion
+            #t0 = time.time() #Vemos cuello de botella en tiempo de ejecucion
 
 
             # Reducimos resolución solo para probar rendimiento
@@ -226,16 +228,17 @@ class ObjectTracking:
 
             #===== Acá probamos distintos modelos de trackers, cargándolos en la variable "results"
             #results = self.model.track(im0, persist=True, tracker="bytetrack.yaml", verbose=False)
-            results = self.model.track(im0, persist=True, verbose=False)  # Object tracking
+            #results = self.model.track(im0, persist=True, tracker="botsort.yaml", verbose=False)
+            results = self.model.track(im0, persist=True, verbose=False)  # Tracker de referencia
 
-            t1 = time.time()
-            print(f"YOLO+TRACK: {(t1-t0)*1000:.1f} ms")
+            #t1 = time.time()
+            #print(f"YOLO+TRACK: {(t1-t0)*1000:.1f} ms")
 
             if results and len(results) > 0:
                 result = results[0]
 
                 if result.boxes is not None and result.boxes.id is not None:
-                    boxes = result.boxes.xyxy.cpu()
+                    boxes = result.boxes.xyxy.cpu() 
                     ids = result.boxes.id.cpu()
                     clss = result.boxes.cls.tolist()
 
@@ -323,6 +326,10 @@ class ObjectTracking:
 
                                                 if(movement_key in self.movement_table):
                                                     movement =  self.movement_table[movement_key] #Se le asigna el valor, ej: "Girar_derecha", no la llave
+                                                    t2 = time.time()
+                                                    self.current_time,self.current_date = self.get_date_and_time(im0)
+                                                    t3 = time.time()
+                                                    #print(f"OCR: {(t3-t2)*1000:.1f} ms")
                                                     if(movement not in self.counter_movement):
                                                         self.counter_movement[movement] = 1  # Ej: {"movimiento_1": 3, "movimiento_2": 1, "movimiento_3": 1}
                                                         print("objeto", id, " realizó movimiento",self.movement_table[movement_key]," a la hora: ", self.current_time, "en fecha: ", self.current_date)
@@ -803,6 +810,6 @@ if __name__ == "__main__":
     # Initialize and run tracker
     tracker = ObjectTracking(
         model="yolo11s.pt",
-        source=r"C:\ProyectosTEL\Respaldo_Conteo_Personas_PDI\Inputs\videoluis_cortado.mp4"
+        source= r"C:\ProyectosTEL\Respaldo_Conteo_Personas_PDI\Inputs\videoluis_cortado.mp4"
     )
     tracker.run()
