@@ -1,25 +1,19 @@
 import cv2
 import numpy as np
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timedelta
 import time
 from ultralytics import YOLO
 from ultralytics.utils.plotting import colors
-import random
 from collections import defaultdict
-import pytesseract
-#=== Debug de memoria ===
-import psutil
+from openpyxl import Workbook, load_workbook
 import os
-process = psutil.Process(os.getpid())
 
-
-pytesseract.pytesseract.tesseract_cmd = r'C:\\Program Files\\Tesseract-OCR\\tesseract.exe'
 
 class ObjectTracking:
     """Object Tracking using Ultralytics YOLO26: https://docs.ultralytics.com/models/yolo26/"""
 
-    def __init__(self, model="yolo11s.pt", source= "Inputs/videoluis_cortado.mp4"
+    def __init__(self, model="yolo11s.pt", source= "Inputs/Av_Principal/Angulo_A.mp4"
     ".mp4"): #yolo11s.pt, yolo11n.pt...Hay diferentes modelos. Hay que ir testeando
 
         self.model = YOLO(model)  # Model initialization
@@ -69,7 +63,13 @@ class ObjectTracking:
         self.prev_date = None
         self.prev_time = None
 
-        
+        #DETECCIÓN DE TIEMPO POR PMSEC
+        # Hora real del primer frame
+        self.start_time = datetime.strptime(
+            '2026-07-22 08:33:34',
+            '%Y-%m-%d %H:%M:%S'
+        )
+                
         #==== Variables del Callback Mouse ==== 
         self.prevX = -1
         self.prevY = -1
@@ -96,23 +96,34 @@ class ObjectTracking:
         # Lista donde se irán almacenando los registros
         self.registros = []
         self.archivo = "conteo_flujo.xlsx"
+         # <-- AQUÍ VA
 
-        #los registros tienen la forma 
-        # registro = {
-        #"PC": 1,
-        #"UBICACION": "Interseccion Av. Principal",
-        #"COMUNA": "Viña del Mar",
-        #"DIA": "Lunes",
-        #"FECHA": "18-07-2026",
-        #"HORA": f"{hora:02d}:{minutos:02d}",
-        #"HH": hora,
-        #"HHMM": hhmm,
-        #"MOV 1": m1,
-        #"MOV 2": m2,
-        #"MOV 3": m3,
-        #"MOV 4": m4,
-        #"FLUJO": (m1+m2+m3+m4)
-    #}
+        # Archivo de salida
+        self.archivo = "conteo_flujo.xlsx"
+
+        # Si existe un Excel anterior, eliminarlo
+        if os.path.exists(self.archivo):
+            os.remove(self.archivo)
+
+        # Crear un Excel nuevo con encabezados
+        wb = Workbook()
+        ws = wb.active
+
+        ws.append([
+            "PC",
+            "UBICACION",
+            "COMUNA",
+            "DIA",
+            "FECHA",
+            "HORA",
+            "HH",
+            "HHMM",
+            "ID",
+            "MOVIMIENTO"
+        ])
+        wb.save(self.archivo)
+
+
 
         # Video capturing module
         self.cap = cv2.VideoCapture(source)
@@ -172,16 +183,15 @@ class ObjectTracking:
         #print("Después del set:", int(self.cap.get(cv2.CAP_PROP_POS_FRAMES)))
     
         # --- Medición de tiempo entre frames ---
-        last_loop_time = time.perf_counter()
+        t0 = time.perf_counter()
 
         while self.cap.isOpened():  #CADA VUELTA AL WHILE ES UN FRAME NUEVO
 
-            ## --- Medición de tiempo entre frames ---
-            current_time = time.perf_counter()
-            delta_ms = (current_time - last_loop_time) * 1000
-            last_loop_time = current_time
+            ## --- Debug de Velocidad de procesamiento ---
+            #current_time = time.perf_counter()
+            #delta_ms = (current_time - last_loop_time) * 1000
+            #last_loop_time = current_time
             #print("")
-
 
             success, im0 = self.cap.read() # im0: Frame actual
             # print("Frame OpenCV:", int(self.cap.get(cv2.CAP_PROP_POS_FRAMES)))
@@ -191,49 +201,31 @@ class ObjectTracking:
                 #print("End of video or failed to read image.")
                 break
 
-            fps_real = 1000 / delta_ms if delta_ms > 0 else 0
-            print(f"FRAME->{self.counter_frames + 1}: {delta_ms:.1f} ms | FPS REAL: {fps_real:.2f}")
-
-            self.counter_frames += 1
-
-            if self.counter_frames % 2 != 0:
-                continue
+            #self.counter_frames += 1
+            #if self.counter_frames % 2 != 0:
+                #continue
 
             # Mostrar memoria RAM cada 100 frames (Para ver si aumenta criticamente)
             #if self.counter_frames % 1 == 0:
                 #memoria = process.memory_info().rss / 1024**2
                 #print(f"Frame: {self.counter_frames} | RAM: {memoria:.2f} MB")
 
-            #Bloque ciclico de Tesseract Date & Time
-            #!!!!! im0 ES LA IMAGEN ORIGINAL QUE DEBEMOS CORTAR 
-            rows, cols, _ = im0.shape       #Capturamos la dimensión para testear donde cortar la fecha y hora
-            #print("Rows: ", rows)     #Debug necesario al configurar ROI en cada video
-            #print("Cols: ", cols)
-
-            
-            #==== Acá llamamos a la función q recibe im0 y entrega Fecha y Hora
-            #t2 = time.time()
-            #self.current_time,self.current_date = self.get_date_and_time(im0)
-            #t3 = time.time()
-            #print(f"OCR: {(t3-t2)*1000:.1f} ms")
-
-
-
-            #t0 = time.time() #Vemos cuello de botella en tiempo de ejecucion
-
-
-            # Reducimos resolución solo para probar rendimiento
-            #im0 = cv2.resize(im0, (1280,720)) #Le bajamos la resolucion para probar si el cuello de botella es la ALTA RESOLUCIÓN
-
 
             #===== Acá probamos distintos modelos de trackers, cargándolos en la variable "results"
             #results = self.model.track(im0, persist=True, tracker="bytetrack.yaml", verbose=False)
             #results = self.model.track(im0, persist=True, tracker="botsort.yaml", verbose=False)
+            
+    
+            
+
+            #t0 = time.perf_counter()
             results = self.model.track(im0, persist=True, verbose=False)  # Tracker de referencia
+            #t1 = time.perf_counter()
 
-            #t1 = time.time()
-            #print(f"YOLO+TRACK: {(t1-t0)*1000:.1f} ms")
-
+            # lógica de líneas
+            
+            #print(f"TRACK: {(t1-t0)*1000:.1f} ms")
+            
             if results and len(results) > 0:
                 result = results[0]
 
@@ -313,6 +305,7 @@ class ObjectTracking:
                                                 # Comparar previous_event con current_event
                                                 # Determinar movimiento ACA DEBEMOS USAR TABLA DE MOVIMIENTOS
                                                 # SE CONSTRUYE LA TABLA PARA CADA VIDEO
+                                                movement = None
                                                 movement_key = (   #Movement_key es una tupla, podría ser: (1,0,1,2,0,1) y toma los valores de 
                                                                    #las llaves de self.movement_table
                                                     previous_event["line"],
@@ -326,15 +319,13 @@ class ObjectTracking:
 
                                                 if(movement_key in self.movement_table):
                                                     movement =  self.movement_table[movement_key] #Se le asigna el valor, ej: "Girar_derecha", no la llave
-                                                    t2 = time.time()
-                                                    self.current_time,self.current_date = self.get_date_and_time(im0)
-                                                    t3 = time.time()
-                                                    #print(f"OCR: {(t3-t2)*1000:.1f} ms")
+                                                    self.current_time,self.current_date = self.get_date_and_time()
+
+                     
                                                     if(movement not in self.counter_movement):
                                                         self.counter_movement[movement] = 1  # Ej: {"movimiento_1": 3, "movimiento_2": 1, "movimiento_3": 1}
                                                         print("objeto", id, " realizó movimiento",self.movement_table[movement_key]," a la hora: ", self.current_time, "en fecha: ", self.current_date)
-                                                
-                                                        
+                                                            
                                                     else:
                                                         print("objeto", id, " realizó movimiento",self.movement_table[movement_key]," a la hora: ", self.current_time, "en fecha: ", self.current_date)
                                                         self.counter_movement[movement]+=1
@@ -343,41 +334,40 @@ class ObjectTracking:
                                                     #OBS: El contador deberá resetearse en cada intervalo de tiempo elegido
                                                     #Crear fecha y hora 
                                                     #
-                                                registro = {
-                                                    "PC": self.pc,
-                                                    "UBICACION": self.ubicacion,
-                                                    "COMUNA": self.comuna,
-                                                    "DIA": self.dia,
-                                                    "FECHA": self.current_date,
-                                                    "HORA": self.current_time,
-                                                    "HH": self.hh,
-                                                    "HHMM": self.hhmm,
-                                                    "ID": id,
-                                                    "MOVIMIENTO": movement
-                                                    #"MOV 1": self.counter_movement.get("MOV 1", 0),
-                                                    #"MOV 2": self.counter_movement.get("MOV 2", 0),
-                                                    #"MOV 3": self.counter_movement.get("MOV 3", 0),
-                                                    #"MOV 4": self.counter_movement.get("MOV 4", 0),
-                                                    #uSO GET PQ AL PRINCIPIO DEL VIDEO PUEDE Q AUN NO OCURRA NINGUN MOV n, 
-                                                    # SI HACEMOSself.counter_movement["MOV 3"] PUEDE HABER ERROR
-                                                    #En cambio con get, Si existe la llave 'MOV 3', devuelve su valor; si no existe, devuelve 0."
+                                                    registro = {
+                                                        "PC": self.pc,
+                                                        "UBICACION": self.ubicacion,
+                                                        "COMUNA": self.comuna,
+                                                        "DIA": self.dia,
+                                                        "FECHA": self.current_date,
+                                                        "HORA": self.current_time,
+                                                        "HH": self.hh,
+                                                        "HHMM": self.hhmm,
+                                                        "ID": id,
+                                                        "MOVIMIENTO": movement
 
-                                                    #"FLUJO": sum(self.counter_movement.values())
-                                                }
-                                                              #Los contadores estan acumulativos, despues hay que resetearlos
-                                                              #En cada intervalo de tiempo
+                                                    }
 
-                                                #========== Exportación a EXCEL ==========
-                                                self.registros.append(registro)
+                                                    #========== Exportación a EXCEL ==========
+                                                    wb = load_workbook(self.archivo)    
+                                                    ws = wb.active
+                                                    ws.append([
+                                                        registro["PC"],
+                                                        registro["UBICACION"],
+                                                        registro["COMUNA"],
+                                                        registro["DIA"],
+                                                        registro["FECHA"],
+                                                        registro["HORA"],
+                                                        registro["HH"],
+                                                        registro["HHMM"],
+                                                        registro["ID"],
+                                                        registro["MOVIMIENTO"]
+                                                    ])
 
-    
-                                                df = pd.DataFrame(self.registros)
+                                                    wb.save(self.archivo)
 
-                                                df.to_excel(
-                                                    self.archivo,
-                                                    index=False
-                                                )
-                                                #self.registros.clear()
+                                                t2 = time.perf_counter()
+                                                #print(f"LOGICA: {(t2-t1)*1000:.1f} ms")
 
 
                                                         
@@ -440,7 +430,7 @@ class ObjectTracking:
                             self.draw_lines(im0)          
 
             self.writer.write(im0)
-            cv2.imshow(self.window_name, im0)  # Display and handle input   NO LA MOSTRAMOS PARA LA PRUEBA
+            #cv2.imshow(self.window_name, im0)  # Display and handle input   NO LA MOSTRAMOS PARA LA PRUEBA
 
             key = cv2.waitKey(1) & 0xFF
             if key == 13:
@@ -450,6 +440,8 @@ class ObjectTracking:
                 #print("Selection cleared")
 
         # Cleanup
+        t1 = time.perf_counter()
+        print(f"Tiempo de ejecucion: {(t1-t0)*1000:.1f} ms")
         self.cap.release()
         cv2.destroyAllWindows()
         #print("Conteo final:", self.counter_crossing)
@@ -628,24 +620,13 @@ class ObjectTracking:
     #============== FIN BLOQUE CALLBACK DE MOUSE ===============
 
     #================ Obtener Fecha y hora (OCR) =================
-    def get_date_and_time(self, frame):
+    def get_date_and_time(self):
 
-        ROI_DateTime = frame[0:100, 0:600]
-
-        texto = pytesseract.image_to_string(ROI_DateTime).strip()
-
-        if texto and texto != self.prev_texto:
-
-            try:
-                dt = datetime.strptime(texto, '%Y-%m-%d %H:%M:%S')
-
-                self.current_date = dt.date()
-                self.current_time = dt.time()
-
-                self.prev_texto = texto
-
-            except ValueError:
-                pass
+        ms = self.cap.get(cv2.CAP_PROP_POS_MSEC)
+        # Fecha y hora absolutas
+        event_time = self.start_time + timedelta(milliseconds=ms)
+        self.current_date = event_time.strftime('%Y-%m-%d')
+        self.current_time = event_time.strftime('%H:%M:%S')
 
         return  self.current_time, self.current_date
 
@@ -810,6 +791,6 @@ if __name__ == "__main__":
     # Initialize and run tracker
     tracker = ObjectTracking(
         model="yolo11s.pt",
-        source="Inputs/videoluis_cortado.mp4"
+        source="Inputs/Av_Principal/Angulo_A.mp4"
     )
     tracker.run()

@@ -10,7 +10,7 @@ from collections import defaultdict
 class ObjectTracking:
     """Object Tracking using Ultralytics YOLO26: https://docs.ultralytics.com/models/yolo26/"""
 
-    def __init__(self, model="yolo11s.pt", source= "Inputs/Paseo_peatonal.mp4"): #yolo11s.pt, yolo11n.pt...Hay diferentes modelos. Hay que ir testeando
+    def __init__(self, model="yolo11s.pt", source= "Inputs/OCM/1.mp4" ): #yolo11s.pt, yolo11n.pt...Hay diferentes modelos. Hay que ir testeando
 
         self.model = YOLO(model)  # Model initialization
         self.names = self.model.names  # Store model classes names
@@ -646,6 +646,6 @@ if __name__ == "__main__":
     # Initialize and run tracker
     tracker = ObjectTracking(
         model="yolo11s.pt",
-        source="Inputs/Paseo_peatonal.mp4" 
+        source="Inputs/OCM/1.mp4" 
     )
     tracker.run()

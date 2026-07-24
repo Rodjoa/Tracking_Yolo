@@ -11,7 +11,7 @@ hora_str = pd.to_datetime(df["HORA"].astype(str)).dt.strftime("%H:%M:%S")
 df["DT"] = pd.to_datetime(fecha_str + " " + hora_str)
 
 # ================= Definir intervalo =================
-intervalo = "5s"
+intervalo = "1min"
 
 # Redondear cada evento al inicio del intervalo
 df["INTERVALO"] = df["DT"].dt.floor(intervalo)

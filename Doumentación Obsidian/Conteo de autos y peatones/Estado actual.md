@@ -5,149 +5,107 @@ Fecha:
 
 ---
 
-## Objetivo
+## Conclusiones principales — Día 21 (21/07/2026)
 
-Desarrollar un sistema de conteo para tráfico vehicular y peatonal enfocado en cruces mediante YOLO,
-tracking y líneas virtuales.
+### Estado general
 
-El sistema busca ser adaptable a distintos escenarios de aplicación:
-
-- Cruces vehiculares en intersecciones.
-- Conteo de vehículos en carreteras rectas.
-- Conteo de peatones en cruces peatonales.
-
-La estrategia de procesamiento dependerá de las características del escenario,
-priorizando robustez del tracking y reducción de errores de conteo.
+El sistema presenta una V1 funcional con detección, tracking, OCR y exportación a Excel operativos. El cuello de botella principal de latencia fue mitigado mediante OCR bajo demanda.
 
 ---
 
-## Implementado
+## Riesgo técnico pendiente
 
-- [x] Detección de objetos mediante YOLO.
-- [x] Tracking de objetos mediante asignación de ID.
-- [x] Obtención de trayectoria mediante centroides.
-- [x] Definición manual de líneas virtuales mediante mouse.
-- [x] Determinación del lado del objeto respecto a una línea mediante producto cruz.
-- [x] Detección de cambios de lado como evento de cruce.
-- [x] Validación geométrica del cruce mediante proyección ortogonal sobre el segmento.
-- [x] Conteo general mediante líneas virtuales.
-- [x] Conteo de vehículos en cruces mediante dos líneas.
-- [x] Primera implementación de tabla de movimientos para distinguir trayectorias vehiculares.
-- [x] Visualización de bounding boxes, IDs y trayectoria del objeto.
+### Robustez del reconocimiento de fecha y hora
+
+Se observó que el OCR funciona correctamente en `videoluis_cortado.mp4` (overlay en blanco y negro), pero falla en otros videos.
+
+Esto sugiere que el problema está asociado a la calidad y representación visual de la ROI más que al funcionamiento básico de Tesseract.
 
 ---
 
-## Estrategias definidas actualmente
+## Hipótesis identificadas
 
-### Cruces vehiculares en intersecciones
+### H1 — Calidad insuficiente de la ROI
 
-Estrategia:
+La compresión del video y la pixelación pueden volver ilegible el timestamp para el OCR.
 
-- Uso de dos o más líneas virtuales.
-- Registro del orden de cruce de líneas.
-- Clasificación del movimiento mediante tabla de movimientos.
+### H2 — Contraste insuficiente del texto
 
-Motivación:
+Los números poseen un color relativamente fijo (amarillo), mientras que el ruido presenta variaciones de color.
 
-En una intersección no basta conocer que un vehículo cruzó una línea,
-sino que es necesario determinar su trayectoria:
+Esto sugiere aplicar un preprocesamiento por color para:
 
-- Giro derecha.
-- Giro izquierda.
-- Continuar recto.
+- resaltar el amarillo del timestamp,
+    
+- eliminar píxeles no pertenecientes al texto,
+    
+- generar una imagen binaria más adecuada para Tesseract MEDIANTE FILTRO HSV u otro
 
----
+### H3 — Lectura única demasiado frágil
 
-### Vehículos en carretera recta
+Ejecutar OCR una sola vez cuando se detecta movimiento tiene alta probabilidad de fallo debido a blur, ruido o compresión del frame específico.
 
-Estrategia propuesta:
+### H4 — ROI mal configurada
 
-- Uso de una línea virtual.
+La posición de la fecha/hora puede variar entre videos, provocando recortes incorrectos.
 
-Motivación:
+HIPOTESIS DESCARTADA (DEBUG DE IMAGEN CORTADA ARROJO QUE NO)
 
-Una única línea reduce la dependencia del tracking entre regiones,
-disminuyendo la posibilidad de pérdida de identidad del objeto.
 
----
 
-### Cruces peatonales
 
-Estrategia propuesta:
-
-- Uso de una línea virtual.
-
-Motivación:
-
-Los peatones presentan mayor variabilidad:
-
-- Cambios de velocidad.
-- Oclusiones.
-- Movimiento menos predecible.
-
-El uso de múltiples líneas puede aumentar la pérdida de tracking
-y generar objetos no contabilizados debido a cambios de ID.
+    
 
 ---
 
-## Pendientes de codificación
+## Método propuesto
 
-- [ ] Implementar contador peatonal y carretera recta con una línea.
-- [ ] Completar lógica de contador por clase.
-- [ ] Exportar datos automáticamente a Excel.
-- [ ] Detectar hora y fecha del video.
-- [ ] Exportar datos asociados a fecha y hora del video.
+### OCR bajo demanda con ráfaga de validación
 
+1. Detectar movimiento o evento relevante.
+
+2. Cortar la imagen, dejando la ROI
+    
+3. Extraer ROI de fecha/hora.
+    
+4. Aplicar preprocesamiento por color y contraste.
+    
+5. Ejecutar OCR.
+    
+6. Validar el formato obtenido.
+    
+7. Si el resultado es inválido, repetir el procedimiento durante una pequeña ráfaga de frames hasta obtener un valor válido o alcanzar un número máximo de intentos.
+    
+
+Hay que ver si usaremos máscara para el texto para el OCR
 ---
 
-## Pendientes experimentales
+## Consideración temporal importante
 
-- [ ] Probar distintos videos para determinar en qué condiciones el modelo funciona mejor.
-- [ ] Definir ángulo óptimo de cámara.
-- [ ] Definir altura/elevación recomendada de cámara.
-- [ ] Analizar influencia de perspectiva y distancia.
-- [ ] Definir con Luis los videos que serán utilizados.
-- [ ] Validar modelo mediante comparación con conteo manual o videos etiquetados.
-- [ ] Estimar error del sistema.
-- [ ] Definir condiciones donde el modelo es confiable.
-- [ ] Iterar si se ven posibles mejoras
+La frecuencia de operaciones debe depender de los FPS del video.
 
-Características a evaluar:
+Conociendo los FPS es posible convertir tiempo real a cantidad de frames.
 
-- Resolución del video.
-- FPS.
-- Iluminación.
-- Cantidad de objetos simultáneos.
-- Oclusiones.
-- Ángulo de visión.
-- Distancia de la cámara al área de interés.
+Ejemplo:
 
----
+- 30 FPS → 1800 frames ≈ 1 minuto.
+    
 
-## Problemas encontrados
+Esto permitirá implementar lógica basada en intervalos temporales, por ejemplo:
 
-### Pérdida de tracking
+- ejecutar OCR al inicio del video,
+    
+- mantener OCR bajo demanda durante el intervalo actual,
+    
+- forzar una nueva lectura cuando cambie el intervalo temporal de interés.
+    
 
-Problema:
+Esta estrategia desacopla la actualización de la hora del evento de cruce y la vincula a la línea temporal real del video.
 
-El uso de múltiples líneas aumenta la posibilidad de pérdida de identidad del objeto,
-debido a cambios de ID durante el recorrido.
-
-Consecuencia:
-
-Un mismo vehículo puede ser considerado como objetos diferentes,
-provocando errores de conteo.
+Recordar que podemos asignarle la hora 9:15 a todos los movimientos del intervalo                         [9:15:00-9:29:59]
 
 
----
 
-## Próximos pasos 
+Además, Vemos dos posibles casos de actualización para OCR:
 
-
-1. Subir versión actual a Github
-2. Documentar decisiones y funciones importantes en notas de Obsidian
-3. Exportar Excel con datos post video
-4. Detección de fecha y hora de la cámara y exportar señalando a qué periodo (ej: los primeros 15 min) pertenecen los datos.
-5. Implementar contador peatonal de 1 línea
-6. Realizar pruebas con distintos escenarios.
-7. Definir condiciones de uso del sistema.
+![[Pasted image 20260721170650.png]]

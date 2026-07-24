@@ -2,7 +2,7 @@ import cv2
 import pytesseract
 
 pytesseract.pytesseract.tesseract_cmd = r'C:\\Program Files\\Tesseract-OCR\\tesseract.exe'
-source = "Inputs/FotoVideo.jpeg"
+source = "../Inputs/Video_Luis/foto_toma.jpg"
 
 # Cargar imagen
 img = cv2.imread(source)
@@ -19,7 +19,7 @@ print("Rows: ", rows)
 print("Cols: ", cols)
 
 #cut image
-cut_image = img[0:50, 0:300]
+cut_image = img[0:50, 0:180]
 
 
 #========== bloque de deteccion ============

@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Desarrollo técnico/Mejoras identificadas/Tasa de muestreo adaptativa.md",
+                "file": "Desarrollo técnico/Validación del sistema/Plantilla de validación.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Tasa de muestreo adaptativa"
+              "title": "Plantilla de validación"
             }
           }
         ]
@@ -185,13 +185,19 @@
   },
   "active": "e8ac2fd4c45ba900",
   "lastOpenFiles": [
-    "Desarrollo técnico/Problemas y limitaciones/Solución a problema de latencia.md",
+    "Pasted image 20260721230531.png",
+    "Estado actual.md",
+    "Pasted image 20260721170650.png",
+    "Desarrollo técnico/Validación del sistema/Problemas en validación.md",
+    "Desarrollo técnico/Validación del sistema/Plantilla de validación.md",
+    "Pasted image 20260721124042.png",
     "Desarrollo técnico/Mejoras identificadas/Tasa de muestreo adaptativa.md",
+    "Desarrollo técnico/Validación del sistema",
+    "Desarrollo técnico/Problemas y limitaciones/Solución a problema de latencia.md",
     "Desarrollo técnico/Mejoras identificadas",
     "Desarrollo técnico/Problemas y limitaciones/Alta Latencia en procesamiento.md",
     "Desarrollo técnico/Problemas y limitaciones/Links utiles Latencia.md",
     "Lineas de trabajo actual.md",
-    "Estado actual.md",
     "Bienvenido.md",
     "Pasted image 20260720120358.png",
     "Pasted image 20260720120334.png",
@@ -221,11 +227,8 @@
     "Imágenes/Pasted image 20260717220648.png",
     "Imágenes/Pasted image 20260717220252.png",
     "Desarrollo técnico/Diseño de solución/Escenarios/Peatones en cruce.md",
-    "Desarrollo técnico/Diseño de solución/Escenarios/Autos en cruce.md",
     "Desarrollo técnico/Diseño de solución/Escenarios",
     "Desarrollo técnico/Problemas y limitaciones",
-    "Desarrollo técnico/Diseño de solución",
-    "Desarrollo técnico/Funciones importantes",
-    "Funciones_importantes.md"
+    "Desarrollo técnico/Diseño de solución"
   ]
 }
